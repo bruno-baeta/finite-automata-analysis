@@ -4,67 +4,81 @@ export class Renderer {
         this.context = canvas.getContext('2d');
         this.statePositions = new Map();
         this.transitionSymbols = new Map();
+        this.afd = { states: new Set(), transitions: new Set(), final: new Set(), initial: null }; // Inicialização básica
     }
 
     renderAFD(afd) {
-        console.log('Rendering AFD:', afd);
         this.canvas.clear();
-        this.afd = afd; // Salvar o AFD atual
-        this.layoutStates(afd.states);
-        this.transitionSymbols.clear(); // Limpa o mapa de símbolos de transição
-        afd.states.forEach(state => this.renderState(state, afd));
-        afd.transitions.forEach(transition => this.updateTransitionSymbols(transition));
-        this.renderAllTransitions(afd);
+        this.afd = afd;
+
+        // Layout dos estados somente se não estiverem posicionados ainda
+        this.layoutStates(this.afd.states);
+        this.transitionSymbols.clear();
+
+        // Renderização dos estados e transições
+        this.afd.states.forEach(state => this.renderState(state, this.afd));
+        this.afd.transitions.forEach(transition => this.updateTransitionSymbols(transition));
+        this.renderAllTransitions(this.afd);
     }
 
     layoutStates(states) {
-        const { width, height } = this.canvas.canvas;
+        const { width, height } = this.canvas;
         const centerX = width / 2;
         const centerY = height / 2;
         const radius = Math.min(centerX, centerY) / 2;
 
-        let index = 0;
-        states.forEach(state => {
-            const angle = (index / states.size) * 2 * Math.PI;
-            const x = centerX + radius * Math.cos(angle);
-            const y = centerY + radius * Math.sin(angle);
-            this.statePositions.set(state.name, { x, y });
-            console.log(`State ${state.name} positioned at (${x}, ${y})`);
-            index++;
-        });
+        if (this.statePositions.size === 0) {
+            let index = 0;
+            states.forEach(state => {
+                const angle = (index / states.size) * 2 * Math.PI;
+                const x = centerX + radius * Math.cos(angle);
+                const y = centerY + radius * Math.sin(angle);
+                this.statePositions.set(state.name, { x, y });
+                index++;
+            });
+        }
     }
 
-    renderState(state, afd) {
-        const { context } = this;
-        const { x, y } = this.statePositions.get(state.name);
-        console.log(`Rendering state ${state.name} at (${x}, ${y})`);
+    renderState(state) {
+        const position = this.statePositions.get(state.name);
+        if (position) {
+            const { x, y } = position;
+            this.drawState(x, y, state.name, this.afd.final.has(state), this.afd.initial === state);
+        } else {
+            console.error(`State position for ${state.name} not found`);
+        }
+    }
+
+    drawState(x, y, name, isFinal, isInitial) {
+        const context = this.context;
+
         context.beginPath();
         context.arc(x, y, 30, 0, 2 * Math.PI);
-        context.fillStyle = '#1e1e1e'; // fill color (same as canvas background)
+        context.fillStyle = '#1e1e1e';
         context.fill();
-        context.strokeStyle = '#ffffff'; // border color
+        context.strokeStyle = '#ffffff';
         context.lineWidth = 2;
         context.stroke();
 
-        context.fillStyle = '#ffffff'; // text color
+        context.fillStyle = '#ffffff';
         context.textAlign = 'center';
         context.textBaseline = 'middle';
-        context.font = 'bold 16px Roboto, sans-serif'; // set font to Roboto, bold, size 16
-        context.fillText(state.name, x, y);
+        context.font = 'bold 16px Roboto, sans-serif';
+        context.fillText(name, x, y);
 
-        if (afd.final.has(state)) {
+        if (isFinal) {
             context.beginPath();
             context.arc(x, y, 25, 0, 2 * Math.PI);
             context.stroke();
         }
 
-        if (afd.initial === state) {
+        if (isInitial) {
             this.drawInitialArrow(x - 50, y, x - 30, y);
         }
     }
 
     drawInitialArrow(startX, startY, endX, endY) {
-        const { context } = this;
+        const context = this.context;
         const angle = Math.atan2(endY - startY, endX - startX);
         const arrowHeadLength = 10;
 
@@ -90,31 +104,30 @@ export class Renderer {
             const existingSymbols = this.transitionSymbols.get(transitionKey);
             this.transitionSymbols.set(transitionKey, `${existingSymbols},${transition.symbol}`);
         } else {
-            // Add new transition symbol
             this.transitionSymbols.set(transitionKey, transition.symbol);
         }
     }
 
-    renderAllTransitions(afd) {
-        afd.transitions.forEach(transition => {
+    renderAllTransitions() {
+        this.afd.transitions.forEach(transition => {
             const fromPosition = this.statePositions.get(transition.fromState.name);
             const toPosition = this.statePositions.get(transition.toState.name);
-            const radius = 30; // radius of the state circle
+            const radius = 30;
             const transitionKey = `${transition.fromState.name}-${transition.toState.name}`;
             const symbol = this.transitionSymbols.get(transitionKey);
 
             if (transition.fromState === transition.toState) {
                 this.renderSelfTransition(fromPosition, radius, symbol);
             } else {
-                this.renderNormalTransition(fromPosition, toPosition, radius, symbol, this.isBidirectional(afd, transition));
+                this.renderNormalTransition(fromPosition, toPosition, radius, symbol, this.isBidirectional(transition));
             }
         });
     }
 
     renderSelfTransition(position, radius, symbol) {
-        const { context } = this;
-        const loopRadius = 40; // Radius for the loop
-        const offset = 10; // Small offset for close loop ends
+        const context = this.context;
+        const loopRadius = 40;
+        const offset = 10;
 
         const startX = position.x - offset;
         const startY = position.y + radius;
@@ -135,17 +148,16 @@ export class Renderer {
 
         this.drawArrow(endX, endY, controlX2, controlY2);
 
-        // Draw the symbol near the loop
         const symbolX = position.x;
         const symbolY = position.y + loopRadius * 2;
 
-        context.fillStyle = '#ffffff'; // text color
-        context.font = 'bold 14px Roboto, sans-serif'; // set font to Roboto, bold, size 14
+        context.fillStyle = '#ffffff';
+        context.font = 'bold 14px Roboto, sans-serif';
         context.fillText(symbol, symbolX, symbolY);
     }
 
     renderNormalTransition(fromPosition, toPosition, radius, symbol, isBidirectional) {
-        const { context } = this;
+        const context = this.context;
         const dx = toPosition.x - fromPosition.x;
         const dy = toPosition.y - fromPosition.y;
         const angle = Math.atan2(dy, dx);
@@ -156,31 +168,25 @@ export class Renderer {
         const toEdgeX = toPosition.x - radius * Math.cos(angle) + offset * Math.sin(angle);
         const toEdgeY = toPosition.y - radius * Math.sin(angle) - offset * Math.cos(angle);
 
-        // Draw only if not already drawn
-        const transitionKey = `${fromPosition.x}-${fromPosition.y}-${toPosition.x}-${toPosition.y}`;
-        if (!this.transitionSymbols.has(transitionKey)) {
-            context.beginPath();
-            context.moveTo(fromEdgeX, fromEdgeY);
-            context.lineTo(toEdgeX, toEdgeY);
-            context.strokeStyle = '#ffffff';
-            context.lineWidth = 2;
-            context.stroke();
-            this.transitionSymbols.set(transitionKey, symbol);
-        }
+        context.beginPath();
+        context.moveTo(fromEdgeX, fromEdgeY);
+        context.lineTo(toEdgeX, toEdgeY);
+        context.strokeStyle = '#ffffff';
+        context.lineWidth = 2;
+        context.stroke();
 
-        this.drawArrow(toEdgeX, toEdgeY, toEdgeX - radius * Math.cos(angle), toEdgeY - radius * Math.sin(angle));
+        this.drawArrow(toEdgeX, toEdgeY, fromEdgeX, fromEdgeY);
 
-        // Draw the symbol next to the line
-        const symbolOffset = 18; // offset from the line
+        const symbolOffset = 18;
         const midX = (fromEdgeX + toEdgeX) / 2 + symbolOffset * Math.sin(angle);
         const midY = (fromEdgeY + toEdgeY) / 2 - symbolOffset * Math.cos(angle);
-        context.fillStyle = '#ffffff'; // text color
-        context.font = 'bold 14px Roboto, sans-serif'; // set font to Roboto, bold, size 14
+        context.fillStyle = '#ffffff';
+        context.font = 'bold 14px Roboto, sans-serif';
         context.fillText(symbol, midX, midY);
     }
 
     drawArrow(x, y, fromX, fromY) {
-        const { context } = this;
+        const context = this.context;
         const angle = Math.atan2(y - fromY, x - fromX);
         const arrowAngle = Math.PI / 6;
         const arrowLength = 10;
@@ -198,18 +204,28 @@ export class Renderer {
         context.stroke();
     }
 
-    isBidirectional(afd, transition) {
-        const transitionsArray = Array.from(afd.transitions);
+    isBidirectional(transition) {
+        const transitionsArray = Array.from(this.afd.transitions);
         return transitionsArray.some(t =>
             t.fromState.name === transition.toState.name && t.toState.name === transition.fromState.name
         );
+    }
+
+    removeTransition(fromStateName, toStateName) {
+        const removed = this.afd.removeTransition(fromStateName, toStateName);
+        if (removed) {
+            console.log(`Transition removed from ${fromStateName} to ${toStateName}`);
+            this.renderAFD(this.afd); // Re-renderiza o AFD após a remoção
+        } else {
+            console.log(`Transition from ${fromStateName} to ${toStateName} not found.`);
+        }
     }
 
     getStateAtPosition(x, y) {
         for (let [name, position] of this.statePositions.entries()) {
             const dx = x - position.x;
             const dy = y - position.y;
-            if (dx * dx + dy * dy <= 30 * 30) { // Verifica se o ponto está dentro do círculo de raio 30
+            if (dx * dx + dy * dy <= 30 * 30) {
                 return this.afd.getState(name);
             }
         }
@@ -218,5 +234,6 @@ export class Renderer {
 
     updateStatePosition(state, x, y) {
         this.statePositions.set(state.name, { x, y });
+        this.renderAFD(this.afd);
     }
 }
