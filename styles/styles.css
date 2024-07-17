@@ -1,25 +1,157 @@
+/* CSS atualizado com melhorias nos estilos dos botões, modal e teclado de letras */
+
 body {
-    margin: 0;
-    font-family: 'Arial', sans-serif;
-    background-color: #121212;
+    background-color: #0f0f0f;
     color: #ffffff;
+    font-family: 'Roboto', sans-serif;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
-    height: 100vh;
+    margin: 0;
+    padding: 0;
 }
 
-#app {
+#card-container {
+    width: 90%;
+    background-color: #1f1f1f;
+    padding: 20px;
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
-    width: 80%;
-    height: 80%;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
 }
 
-canvas {
+#afd-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    width: 100%;
+    justify-content: space-between;
+}
+
+.card-item {
+    flex: 1;
+    font-size: 24px;
+    padding: 10px;
+    background-color: #333333;
+    border-radius: 5px;
+    text-align: center;
+}
+
+.transition-btn {
+    background-color: #6441a5;
+    color: #ffffff;
+    border: none;
+    border-radius: 50%;
+    padding: 15px 25px;
+    cursor: pointer;
+    font-size: 24px;
+    transition: background-color 0.3s;
+}
+
+.transition-btn:hover {
+    background-color: #4b2e7e;
+}
+
+#afd-canvas {
+    border: 2px solid #333;
+    border-radius: 10px;
+    background-color: #292929;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    margin-bottom: 20px;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
     width: 100%;
     height: 100%;
-    border: 1px solid #ffffff;
-    background-color: #1e1e1e;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+.modal-content {
+    background-color: #1f1f1f;
+    margin: 10% auto;
+    padding: 30px;
+    border: none;
+    width: 60%;
+    max-width: 650px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+    text-align: center;
+    color: #ffffff;
+    font-family: 'Roboto', sans-serif;
+}
+
+.close-btn {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close-btn:hover,
+.close-btn:focus {
+    color: #fff;
+    text-decoration: none;
+}
+
+#keyboard {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding-top: 20px; /* Espaçamento adicionado para os números */
+}
+
+.key {
+    background-color: #6441a5; /* Twitch purple */
+    color: #ffffff;
+    padding: 12px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s, color 0.3s;
+    font-size: 18px;
+    text-align: center;
+    border: none;
+    position: relative;
+}
+
+.key.selected {
+    background-color: #090413; /* Cor mais escura quando selecionada */
+}
+
+.key:hover {
+    background-color: #51388a; /* Cor mais escura no hover */
+}
+
+.numbers {
+    position: absolute;
+    top: -20px; /* Ajuste para posicionar os números acima das letras */
+    color: #aaa; /* Cor dos números */
+    font-size: 12px;
+}
+
+.submit-btn {
+    background-color: #4b2e7e; /* Cor do botão submit */
+    color: #ffffff;
+    padding: 14px 24px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 18px;
+    transition: background-color 0.3s;
+    margin-top: 20px; /* Espaçamento adicionado abaixo do teclado */
+}
+
+.submit-btn:hover {
+    background-color: #51388a; /* Cor mais escura no hover */
 }
