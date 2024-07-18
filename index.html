@@ -1,61 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AFD Visualizer</title>
-    <link rel="stylesheet" href="styles/styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulador de Autômato Finito</title>
+  <link rel="stylesheet" href="styles/styles.css">
 </head>
 <body>
-    <div id="card-container" class="card">
-        <div id="afd-info">
-            <div class="card-item"><strong>E</strong> = { <span id="states"></span> }</div>
-            <div class="card-item"><strong>Σ</strong> = { <span id="alphabet"></span> }</div>
-            <div class="card-item"><strong>i</strong> = <span id="initial-state"></span></div>
-            <div class="card-item"><strong>F</strong> = { <span id="final-states"></span> }</div>
-        </div>
-        <button id="transition-button" class="transition-btn">δ</button>
+  <div id="automatonInfo" class="info-cards">
+    <div class="info-card">
+      <h2>Estados (E)</h2>
+      <p id="states"></p>
     </div>
-
-    <canvas id="afd-canvas" width="800" height="600"></canvas>
-
-    <div id="input-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn">&times;</span>
-            <h2>Adicione os simbolos do alfabeto (Σ)</h2>
-            <form id="alphabet-form">
-                <div id="keyboard" class="keyboard">
-                    <!-- Letters serão adicionadas dinamicamente aqui -->
-                </div>
-                <button type="submit" class="submit-btn">Salvar</button>
-            </form>
-        </div>
+    <div class="info-card">
+      <h2>Alfabeto (Σ)</h2>
+      <p id="alphabet"></p>
     </div>
-
-    <div id="transitions-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn">&times;</span>
-            <div id="transitions-table-container">
-                <table id="transitions-table">
-                    <thead>
-                        <tr>
-                            <th>q</th>
-                            <th>q'</th>
-                            <th>Σ</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Linhas serão adicionadas dinamicamente aqui -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
+    <div class="info-card">
+      <h2>Iniciais (I)</h2>
+      <p id="initialStates"></p>
     </div>
-
-    <div id="input-fields">
-        <!-- Campos de entrada dinâmicos serão adicionados aqui -->
+    <div class="info-card">
+      <h2>Finais (F)</h2>
+      <p id="finalStates"></p>
     </div>
+    <div class="info-card" id="transitionCard">
+      <h2>Transições (δ)</h2>
+      <button id="showTransitions">Mostrar</button>
+    </div>
+  </div>
 
-    <script type="module" src="scripts/main.js"></script>
+  <canvas id="automatonCanvas"></canvas>
+
+  <div id="symbolKeyboard" class="hidden">
+    <h2>Escolha um símbolo</h2>
+    <div id="symbolsContainer"></div>
+  </div>
+
+  <div id="transitionPopup" style="display: none;" class="popup hidden">
+    <div class="popup-header" >
+      <button id="closePopup">X</button>
+    </div>
+    <div class="popup-content">
+      <table id="transitionTable">
+        <thead>
+          <tr>
+            <th>δ</th>
+            <!-- Cabeçalhos para símbolos serão adicionados dinamicamente -->
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Linhas de transições serão adicionadas dinamicamente -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script type="module" src="scripts/main.js"></script>
 </body>
 </html>

@@ -1,152 +1,147 @@
-import { AFD } from './AFD/AFD.js';
-import { Canvas } from './Canvas/Canvas.js';
-import { Renderer } from './Canvas/Renderer.js';
-import { StateMover } from './Events/StateMover.js';
-import { SetInitialState } from './Events/SetInitialState.js';
-import { AddFinalStates } from './Events/AddFinalStates.js';
-import { LinkTransition } from './Events/LinkTransition.js';
-import { RemoveTransition } from './Events/RemoveTransition.js';
-import { RemoveState } from './Events/RemoveState.js';
-import { AddState } from './Events/AddState.js';
+import { AutomatonController } from "../controllers/AutomatonController.js";
+import { Automaton } from "../models/Automaton.js";
 
-document.addEventListener('DOMContentLoaded', (event) => {
-    const canvasElement = document.getElementById('afd-canvas');
-    const canvas = new Canvas(canvasElement);
-    const renderer = new Renderer(canvas);
+document.addEventListener("DOMContentLoaded", () => {
+  const canvas = document.getElementById('automatonCanvas');
+  const automaton = new Automaton();
+  const automatonController = new AutomatonController(canvas, automaton);
 
-    const inputModal = document.getElementById('input-modal');
-    const inputCloseBtn = inputModal.querySelector('.close-btn');
-    const alphabetForm = document.getElementById('alphabet-form');
-    const keyboard = document.getElementById('keyboard');
-    const submitBtn = alphabetForm.querySelector('.submit-btn');
+  // Funções para atualizar os cartões de informações
+  function updateAutomatonInfo() {
+    document.getElementById('states').textContent = automaton.states.map(state => state.name).join(', ');
+    document.getElementById('alphabet').textContent = automaton.alphabet.join(', ');
+    document.getElementById('initialStates').textContent = automaton.initial.map(state => state.name).join(', ');
+    document.getElementById('finalStates').textContent = automaton.final.map(state => state.name).join(', ');
 
-    // Set para manter o estado de seleção das letras
-    const selectedLetters = new Set();
+    // Atualizar a tabela de transições
+    const transitionTable = document.getElementById('transitionTable');
+    const thead = transitionTable.querySelector('thead tr');
+    const tbody = transitionTable.querySelector('tbody');
 
-    // Criando teclado de letras
-    const letters = '0123456789abcdefghijk'.split('');
-    letters.forEach(letter => {
-        const key = document.createElement('div');
-        key.classList.add('key');
-        key.textContent = letter;
-        key.addEventListener('click', () => {
-            if (selectedLetters.has(letter)) {
-                selectedLetters.delete(letter);
-                key.classList.remove('selected');
-            } else {
-                selectedLetters.add(letter);
-                key.classList.add('selected');
-            }
-        });
-        keyboard.appendChild(key);
+    // Limpar cabeçalhos e corpo da tabela
+    thead.innerHTML = '';
+    tbody.innerHTML = '';
+
+    // Coletar símbolos únicos utilizados nas transições
+    const usedSymbols = [...new Set(automaton.transitions.map(t => t.symbol))];
+
+    // Adicionar cabeçalho de estado e símbolos utilizados
+    const stateHeader = document.createElement('th');
+    stateHeader.textContent = 'δ';
+    thead.appendChild(stateHeader);
+
+    usedSymbols.forEach(symbol => {
+      const th = document.createElement('th');
+      th.textContent = symbol;
+      thead.appendChild(th);
     });
 
-    // Exibir o modal ao carregar a página
-    inputModal.style.display = 'block';
+    // Adicionar linhas para cada estado e suas transições
+    automaton.states.forEach(state => {
+      const row = document.createElement('tr');
+      const stateCell = document.createElement('td');
+      stateCell.textContent = state.name;
+      row.appendChild(stateCell);
 
-    // Fechar modal ao clicar no botão de fechar
-    inputCloseBtn.addEventListener('click', function() {
-        inputModal.style.display = 'none';
+      usedSymbols.forEach(symbol => {
+        const cell = document.createElement('td');
+        const transitions = automaton.transitions
+          .filter(t => t.fromState === state && t.symbol === symbol)
+          .map(t => t.toState.name);
+        cell.textContent = transitions.length > 0 ? `{ ${transitions.join(', ')} }` : '-';
+        row.appendChild(cell);
+      });
+
+      tbody.appendChild(row);
     });
+  }
 
-    // Evitar que o formulário seja enviado ao pressionar Enter
-    alphabetForm.addEventListener('submit', function(event) {
-        event.preventDefault();
-        const inputField = document.querySelector('input[name="symbol"]');
-        const symbol = inputField.value.trim();
+  automatonController.setUpdateCallback(updateAutomatonInfo);
 
-        if (symbol) {
-            const existingSymbols = Array.from(document.querySelectorAll('.key')).map(key => key.textContent);
-            if (!existingSymbols.includes(symbol)) {
-                const key = document.createElement('div');
-                key.classList.add('key');
-                key.textContent = symbol;
-                key.addEventListener('click', () => {
-                    if (selectedLetters.has(symbol)) {
-                        selectedLetters.delete(symbol);
-                        key.classList.remove('selected');
-                    } else {
-                        selectedLetters.add(symbol);
-                        key.classList.add('selected');
-                    }
-                });
-                keyboard.appendChild(key);
-            }
-        }
+  // Inicializa o autômato e atualiza as informações inicialmente
+  automatonController.initialize();
 
-        inputField.value = '';
-    });
+  // Mostrar pop-up de transições
+  document.getElementById('showTransitions').addEventListener('click', () => {
+    const popup = document.getElementById('transitionPopup');
+    popup.classList.remove('hidden');
+    popup.style.display = 'block';
+  });
 
-    // Ao clicar no botão de submit
-    submitBtn.addEventListener('click', function() {
-        // Obter os símbolos selecionados
-        const alphabet = Array.from(selectedLetters);
+  // Fechar pop-up de transições
+  document.getElementById('closePopup').addEventListener('click', () => {
+    const popup = document.getElementById('transitionPopup');
+    popup.classList.add('hidden');
+    popup.style.display = 'none';
+  });
 
-        // Criar o autômato finito determinístico (AFD)
-        const afd = new AFD(alphabet);
-        renderer.renderAFD(afd);
-        new AddState(renderer);
-        new StateMover(renderer);
-        new SetInitialState(renderer);
-        new AddFinalStates(renderer);
-        new LinkTransition(renderer);
-        new RemoveTransition(renderer);
-        new RemoveState(renderer, afd);
+  // Função para permitir arrastar o pop-up
+  function dragElement(element) {
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    element.onmousedown = dragMouseDown;
 
-        // Esconder o modal após configurar o alfabeto e iniciar o AFD
-        inputModal.style.display = 'none';
-
-        // Atualizar informações na interface do usuário
-        updateCard(afd);
-        updateTransitionsTable(afd);
-    });
-
-    // Função para atualizar visualmente os botões selecionados
-    function updateSelectedButtons() {
-        const allKeys = Array.from(document.querySelectorAll('.key'));
-        allKeys.forEach(key => {
-            const letter = key.textContent;
-            if (selectedLetters.has(letter)) {
-                key.classList.add('selected');
-            } else {
-                key.classList.remove('selected');
-            }
-        });
+    function dragMouseDown(e) {
+      e = e || window.event;
+      e.preventDefault();
+      pos3 = e.clientX;
+      pos4 = e.clientY;
+      document.onmouseup = closeDragElement;
+      document.onmousemove = elementDrag;
     }
 
-    // Atualizar visualmente ao carregar a página
-    updateSelectedButtons();
+    function elementDrag(e) {
+      e = e || window.event;
+      e.preventDefault();
+      pos1 = pos3 - e.clientX;
+      pos2 = pos4 - e.clientY;
+      pos3 = e.clientX;
+      pos4 = e.clientY;
+      element.style.top = (element.offsetTop - pos2) + "px";
+      element.style.left = (element.offsetLeft - pos1) + "px";
+    }
 
-    // Atualizar visualmente ao clicar nos botões do teclado
-    keyboard.addEventListener('click', () => {
-        updateSelectedButtons();
-    });
+    function closeDragElement() {
+      document.onmouseup = null;
+      document.onmousemove = null;
+    }
+  }
+
+  dragElement(document.getElementById('transitionPopup'));
+
+  // Substitui métodos do automatonController para atualizar as informações após cada modificação
+  const originalAddState = automatonController.addStateAtPosition.bind(automatonController);
+  automatonController.addStateAtPosition = (x, y) => {
+    originalAddState(x, y);
+    updateAutomatonInfo();
+  };
+
+  const originalSetInitialState = automatonController.toggleInitialState.bind(automatonController);
+  automatonController.toggleInitialState = (state) => {
+    originalSetInitialState(state);
+    updateAutomatonInfo();
+  };
+
+  const originalToggleFinalState = automatonController.toggleFinalState.bind(automatonController);
+  automatonController.toggleFinalState = (state) => {
+    originalToggleFinalState(state);
+    updateAutomatonInfo();
+  };
+
+  const originalAddTransition = automatonController.addTransition.bind(automatonController);
+  automatonController.addTransition = (fromState, toState, symbol) => {
+    originalAddTransition(fromState, toState, symbol);
+    updateAutomatonInfo();
+  };
+
+  const originalRemoveState = automatonController.removeState.bind(automatonController);
+  automatonController.removeState = (stateName) => {
+    originalRemoveState(stateName);
+    updateAutomatonInfo();
+  };
+
+  const originalRemoveTransition = automatonController.removeTransition.bind(automatonController);
+  automatonController.removeTransition = (transition) => {
+    originalRemoveTransition(transition);
+    updateAutomatonInfo();
+  };
 });
-
-function updateCard(afd) {
-    document.getElementById('states').textContent = Array.from(afd.states).join(', ');
-    document.getElementById('alphabet').textContent = afd.alphabet.join(', ');
-    document.getElementById('initial-state').textContent = afd.initial || 'N/A';
-    document.getElementById('final-states').textContent = Array.from(afd.final).join(', ');
-}
-
-function updateTransitionsTable(afd) {
-    const tableBody = document.querySelector('#transitions-table tbody');
-    tableBody.innerHTML = ''; // Limpar as linhas existentes
-
-    afd.transitions.forEach(transition => {
-        const row = document.createElement('tr');
-        const fromCell = document.createElement('td');
-        const toCell = document.createElement('td');
-        const symbolCell = document.createElement('td');
-
-        fromCell.textContent = transition.from;
-        toCell.textContent = transition.to;
-        symbolCell.textContent = transition.symbol;
-
-        row.appendChild(fromCell);
-        row.appendChild(toCell);
-        row.appendChild(symbolCell);
-        tableBody.appendChild(row);
-    });
-}
